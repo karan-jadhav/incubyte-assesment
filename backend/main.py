@@ -1,0 +1,20 @@
+from fastapi import FastAPI
+
+from backend.config import Settings, get_settings
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    app = FastAPI(title=settings.app_name, debug=settings.debug)
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        return {
+            "status": "ok",
+            "environment": settings.environment,
+        }
+
+    return app
+
+
+app = create_app()
