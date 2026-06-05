@@ -12,6 +12,8 @@ postgresql+psycopg://incubyte:incubyte@localhost:5432/incubyte
 
 Alembic reads `DATABASE_URL` when it is set. Plain `postgresql://` and `postgres://` URLs are normalized to use SQLAlchemy's `psycopg` driver.
 
+SQLAlchemy models live in `backend/models.py`. Alembic imports `Base.metadata` from that module for autogenerate.
+
 ## Commands
 
 Start the database:
@@ -38,4 +40,4 @@ Show the current migration:
 uv run alembic current
 ```
 
-When SQLAlchemy models are added, wire their `Base.metadata` into `alembic/env.py` before using Alembic autogenerate.
+Use `--autogenerate` after changing SQLAlchemy models so Alembic can compare `Base.metadata` with the database schema.
