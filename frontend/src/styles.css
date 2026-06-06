@@ -1,5 +1,4 @@
-
-@import "tailwindcss";
+@import 'tailwindcss';
 
 * {
   box-sizing: border-box;
@@ -13,5 +12,14 @@ body,
 
 body {
   margin: 0;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  color: #231f20;
+  background: #f7f3ec;
 }
 
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
