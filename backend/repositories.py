@@ -10,6 +10,7 @@ from backend.schemas import (
     EmployeeUpdate,
     JobTitleSalaryBreakdownItem,
     SalarySummaryResponse,
+    TopCountrySalaryItem,
 )
 
 
@@ -171,6 +172,43 @@ class SalaryInsightRepository:
         return [
             JobTitleSalaryBreakdownItem(
                 job_title=row[0],
+                currency=self._resolve_currency(
+                    employee_count=int(row[1] or 0),
+                    distinct_currency_count=int(row[5] or 0),
+                    currency=row[6],
+                ),
+                employee_count=int(row[1] or 0),
+                min_salary=row[2],
+                max_salary=row[3],
+                avg_salary=self._round_decimal(row[4]),
+            )
+            for row in rows
+        ]
+
+    async def top_countries_by_average_salary(
+        self,
+        *,
+        limit: int,
+    ) -> list[TopCountrySalaryItem]:
+        avg_salary = func.avg(Employee.salary)
+        statement = (
+            select(
+                Employee.country,
+                func.count(Employee.id),
+                func.min(Employee.salary),
+                func.max(Employee.salary),
+                avg_salary,
+                func.count(distinct(Employee.currency)),
+                func.min(Employee.currency),
+            )
+            .group_by(Employee.country)
+            .order_by(avg_salary.desc(), Employee.country)
+            .limit(limit)
+        )
+        rows = (await self.session.execute(statement)).all()
+        return [
+            TopCountrySalaryItem(
+                country=row[0],
                 currency=self._resolve_currency(
                     employee_count=int(row[1] or 0),
                     distinct_currency_count=int(row[5] or 0),

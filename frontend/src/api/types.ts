@@ -71,3 +71,16 @@ export type JobTitleSalaryBreakdownResponse = {
   country: string
   items: Array<JobTitleSalaryBreakdownItem>
 }
+
+export type TopCountrySalaryItem = {
+  country: string
+  currency: string | null
+  employee_count: number
+  min_salary: string | null
+  max_salary: string | null
+  avg_salary: string | null
+}
+
+export type TopCountrySalaryResponse = {
+  items: Array<TopCountrySalaryItem>
+}

@@ -8,6 +8,7 @@ from backend.repositories import SalaryInsightRepository
 from backend.schemas import (
     JobTitleSalaryBreakdownResponse,
     SalarySummaryResponse,
+    TopCountrySalaryResponse,
 )
 from backend.services import SalaryInsightService
 
@@ -36,3 +37,11 @@ async def get_job_title_breakdown(
     country: Annotated[str, Query(min_length=1)],
 ) -> JobTitleSalaryBreakdownResponse:
     return await service.get_job_title_breakdown(country=country)
+
+
+@router.get("/top-countries", response_model=TopCountrySalaryResponse)
+async def get_top_countries_by_average_salary(
+    service: Annotated[SalaryInsightService, Depends(get_salary_insight_service)],
+    limit: Annotated[int, Query(ge=1, le=20)] = 5,
+) -> TopCountrySalaryResponse:
+    return await service.get_top_countries_by_average_salary(limit=limit)

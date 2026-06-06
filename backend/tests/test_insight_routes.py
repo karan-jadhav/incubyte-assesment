@@ -5,7 +5,11 @@ import pytest
 
 from backend.main import create_app
 from backend.routes.insights import get_salary_insight_service
-from backend.schemas import JobTitleSalaryBreakdownResponse, SalarySummaryResponse
+from backend.schemas import (
+    JobTitleSalaryBreakdownResponse,
+    SalarySummaryResponse,
+    TopCountrySalaryResponse,
+)
 
 
 pytestmark = pytest.mark.anyio
@@ -74,6 +78,41 @@ async def test_job_title_breakdown_route_returns_items():
     assert service.breakdown_country == "India"
 
 
+async def test_top_countries_route_returns_items():
+    service = FakeSalaryInsightService()
+
+    async with build_client(service) as client:
+        response = await client.get(
+            "/insights/top-countries",
+            params={"limit": 3},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == [
+        {
+            "country": "India",
+            "currency": "INR",
+            "employee_count": 2,
+            "min_salary": "100000.00",
+            "max_salary": "200000.00",
+            "avg_salary": "150000.00",
+        }
+    ]
+    assert service.top_countries_limit == 3
+
+
+async def test_top_countries_route_validates_limit():
+    service = FakeSalaryInsightService()
+
+    async with build_client(service) as client:
+        response = await client.get(
+            "/insights/top-countries",
+            params={"limit": 0},
+        )
+
+    assert response.status_code == 422
+
+
 def build_client(service):
     app = create_app()
     app.dependency_overrides[get_salary_insight_service] = lambda: service
@@ -87,6 +126,7 @@ class FakeSalaryInsightService:
     def __init__(self):
         self.summary_filters = None
         self.breakdown_country = None
+        self.top_countries_limit = None
 
     async def get_salary_summary(self, *, country, job_title=None):
         self.summary_filters = {
@@ -110,6 +150,21 @@ class FakeSalaryInsightService:
             items=[
                 {
                     "job_title": "Software Engineer",
+                    "currency": "INR",
+                    "employee_count": 2,
+                    "min_salary": Decimal("100000.00"),
+                    "max_salary": Decimal("200000.00"),
+                    "avg_salary": Decimal("150000.00"),
+                }
+            ],
+        )
+
+    async def get_top_countries_by_average_salary(self, *, limit):
+        self.top_countries_limit = limit
+        return TopCountrySalaryResponse(
+            items=[
+                {
+                    "country": "India",
                     "currency": "INR",
                     "employee_count": 2,
                     "min_salary": Decimal("100000.00"),

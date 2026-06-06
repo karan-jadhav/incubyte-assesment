@@ -2,7 +2,11 @@ from decimal import Decimal
 
 import pytest
 
-from backend.schemas import JobTitleSalaryBreakdownItem, SalarySummaryResponse
+from backend.schemas import (
+    JobTitleSalaryBreakdownItem,
+    SalarySummaryResponse,
+    TopCountrySalaryItem,
+)
 from backend.services import SalaryInsightService
 
 
@@ -41,10 +45,21 @@ async def test_insight_service_wraps_job_title_breakdown():
     assert repository.breakdown_country == "India"
 
 
+async def test_insight_service_wraps_top_countries():
+    repository = FakeSalaryInsightRepository()
+    service = SalaryInsightService(repository)
+
+    response = await service.get_top_countries_by_average_salary(limit=3)
+
+    assert response.items[0].country == "India"
+    assert repository.top_countries_limit == 3
+
+
 class FakeSalaryInsightRepository:
     def __init__(self):
         self.summary_filters = None
         self.breakdown_country = None
+        self.top_countries_limit = None
 
     async def salary_summary(self, *, country, job_title=None):
         self.summary_filters = {
@@ -66,6 +81,19 @@ class FakeSalaryInsightRepository:
         return [
             JobTitleSalaryBreakdownItem(
                 job_title="Software Engineer",
+                currency="INR",
+                employee_count=2,
+                min_salary=Decimal("100000.00"),
+                max_salary=Decimal("200000.00"),
+                avg_salary=Decimal("150000.00"),
+            )
+        ]
+
+    async def top_countries_by_average_salary(self, *, limit):
+        self.top_countries_limit = limit
+        return [
+            TopCountrySalaryItem(
+                country="India",
                 currency="INR",
                 employee_count=2,
                 min_salary=Decimal("100000.00"),

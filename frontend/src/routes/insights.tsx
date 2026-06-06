@@ -14,20 +14,25 @@ import {
   useEmployeeJobTitles,
   useJobTitleBreakdown,
   useSalarySummary,
+  useTopCountriesByAverageSalary,
 } from '../api/hooks'
 import { ApiError } from '../api/client'
 import type {
   JobTitleSalaryBreakdownItem,
   SalarySummaryResponse,
+  TopCountrySalaryItem,
 } from '../api/types'
 
 export const Route = createFileRoute('/insights')({
   component: InsightsRoute,
 })
 
+const topCountryLimitOptions = [3, 5, 10, 15, 20]
+
 function InsightsRoute() {
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedJobTitle, setSelectedJobTitle] = useState('')
+  const [topCountryLimit, setTopCountryLimit] = useState(5)
 
   const countriesQuery = useEmployeeCountries()
   const jobTitlesQuery = useEmployeeJobTitles(selectedCountry || undefined)
@@ -37,10 +42,12 @@ function InsightsRoute() {
     selectedJobTitle || undefined,
   )
   const breakdownQuery = useJobTitleBreakdown(selectedCountry)
+  const topCountriesQuery = useTopCountriesByAverageSalary(topCountryLimit)
 
   const countrySummary = countrySummaryQuery.data
   const roleSummary = selectedJobTitle ? roleSummaryQuery.data : undefined
   const breakdownItems = breakdownQuery.data?.items ?? []
+  const topCountries = topCountriesQuery.data?.items ?? []
   const currency = roleSummary?.currency ?? countrySummary?.currency ?? null
 
   function updateCountry(country: string) {
@@ -62,7 +69,9 @@ function InsightsRoute() {
           </p>
         </div>
 
-        {countrySummaryQuery.isFetching || breakdownQuery.isFetching ? (
+        {countrySummaryQuery.isFetching ||
+        breakdownQuery.isFetching ||
+        topCountriesQuery.isFetching ? (
           <p className="text-sm font-medium text-[#806941]">
             Refreshing metrics...
           </p>
@@ -118,6 +127,15 @@ function InsightsRoute() {
           </select>
         </label>
       </div>
+
+      <TopCountriesTable
+        error={getErrorMessage(topCountriesQuery.error)}
+        isError={topCountriesQuery.isError}
+        isLoading={topCountriesQuery.isLoading}
+        items={topCountries}
+        limit={topCountryLimit}
+        onLimitChange={setTopCountryLimit}
+      />
 
       {!selectedCountry ? (
         <EmptyState
@@ -186,6 +204,98 @@ function InsightsRoute() {
         </>
       )}
     </section>
+  )
+}
+
+type TopCountriesTableProps = {
+  error: string | null
+  isError: boolean
+  isLoading: boolean
+  items: Array<TopCountrySalaryItem>
+  limit: number
+  onLimitChange: (limit: number) => void
+}
+
+function TopCountriesTable({
+  error,
+  isError,
+  isLoading,
+  items,
+  limit,
+  onLimitChange,
+}: TopCountriesTableProps) {
+  return (
+    <div className="overflow-hidden rounded-md border border-[#d8d0c2] bg-white">
+      <div className="flex flex-col gap-3 border-b border-[#e1d8ca] bg-[#fffaf1] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-medium text-[#231f20]">
+          Top countries by average salary
+        </p>
+        <label className="flex items-center gap-2 text-sm text-[#5f574c]">
+          <span>Show</span>
+          <select
+            className="h-9 rounded-md border border-[#cfc4b4] bg-white px-2 text-sm text-[#231f20] outline-none transition focus:border-[#1f5e67] focus:ring-2 focus:ring-[#1f5e67]/20"
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+            value={limit}
+          >
+            {topCountryLimitOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <span>countries</span>
+        </label>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[38rem] border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-[#e1d8ca] bg-[#fffaf1] text-xs font-semibold tracking-[0.08em] text-[#6d6255] uppercase">
+              <th className="px-4 py-3">Country</th>
+              <th className="px-4 py-3">Employees</th>
+              <th className="px-4 py-3">Average</th>
+              <th className="px-4 py-3">Currency</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <TableMessage colSpan={4} message="Loading countries..." />
+            ) : isError ? (
+              <TableMessage
+                colSpan={4}
+                message={error ?? 'Unable to load top countries.'}
+                tone="error"
+              />
+            ) : items.length === 0 ? (
+              <TableMessage
+                colSpan={4}
+                message="No country salary data found."
+              />
+            ) : (
+              items.map((item) => (
+                <tr
+                  className="border-b border-[#eee6da] last:border-0 hover:bg-[#fffaf1]"
+                  key={item.country}
+                >
+                  <td className="px-4 py-3 font-medium text-[#231f20]">
+                    {item.country}
+                  </td>
+                  <td className="px-4 py-3 text-[#4f473d]">
+                    {formatCount(item.employee_count)}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {formatSalary(item.avg_salary, item.currency)}
+                  </td>
+                  <td className="px-4 py-3 text-[#4f473d]">
+                    {item.currency ?? 'Mixed'}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
@@ -313,14 +423,18 @@ function BreakdownTable({
           </thead>
           <tbody>
             {isLoading ? (
-              <BreakdownMessage message="Loading breakdown..." />
+              <TableMessage colSpan={5} message="Loading breakdown..." />
             ) : isError ? (
-              <BreakdownMessage
+              <TableMessage
+                colSpan={5}
                 message={error ?? 'Unable to load salary breakdown.'}
                 tone="error"
               />
             ) : items.length === 0 ? (
-              <BreakdownMessage message="No salary data found for this country." />
+              <TableMessage
+                colSpan={5}
+                message="No salary data found for this country."
+              />
             ) : (
               items.map((item) => (
                 <tr
@@ -352,16 +466,18 @@ function BreakdownTable({
   )
 }
 
-function BreakdownMessage({
+function TableMessage({
+  colSpan,
   message,
   tone = 'neutral',
 }: {
+  colSpan: number
   message: string
   tone?: 'error' | 'neutral'
 }) {
   return (
     <tr>
-      <td className="px-4 py-12 text-center" colSpan={5}>
+      <td className="px-4 py-12 text-center" colSpan={colSpan}>
         <p
           className={`text-sm font-medium ${
             tone === 'error' ? 'text-[#9b341f]' : 'text-[#231f20]'

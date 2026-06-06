@@ -72,3 +72,16 @@ class JobTitleSalaryBreakdownItem(BaseModel):
 class JobTitleSalaryBreakdownResponse(BaseModel):
     country: str
     items: list[JobTitleSalaryBreakdownItem]
+
+
+class TopCountrySalaryItem(BaseModel):
+    country: str
+    currency: str | None
+    employee_count: int
+    min_salary: Decimal | None
+    max_salary: Decimal | None
+    avg_salary: Decimal | None
+
+
+class TopCountrySalaryResponse(BaseModel):
+    items: list[TopCountrySalaryItem]

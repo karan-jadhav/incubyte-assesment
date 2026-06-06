@@ -136,6 +136,58 @@ async def test_repository_returns_job_title_breakdown_for_country():
     assert breakdown[1].avg_salary == Decimal("150000.00")
 
 
+async def test_repository_returns_top_countries_by_average_salary():
+    low_country = f"Insight Low Country {uuid4()}"
+    high_country = f"Insight High Country {uuid4()}"
+    middle_country = f"Insight Middle Country {uuid4()}"
+
+    async with async_session_maker() as session:
+        employee_repository = EmployeeRepository(session)
+        insight_repository = SalaryInsightRepository(session)
+        await employee_repository.create(
+            employee_create(
+                "IT-INSIGHT-TOP-001",
+                country=low_country,
+                salary="100000.00",
+            )
+        )
+        await employee_repository.create(
+            employee_create(
+                "IT-INSIGHT-TOP-002",
+                country=high_country,
+                salary="300000.00",
+            )
+        )
+        await employee_repository.create(
+            employee_create(
+                "IT-INSIGHT-TOP-003",
+                country=high_country,
+                salary="500000.00",
+            )
+        )
+        await employee_repository.create(
+            employee_create(
+                "IT-INSIGHT-TOP-004",
+                country=middle_country,
+                salary="250000.00",
+            )
+        )
+
+        countries = await insight_repository.top_countries_by_average_salary(limit=2)
+
+    assert [country.country for country in countries] == [
+        high_country,
+        middle_country,
+    ]
+    assert countries[0].currency == "INR"
+    assert countries[0].employee_count == 2
+    assert countries[0].min_salary == Decimal("300000.00")
+    assert countries[0].max_salary == Decimal("500000.00")
+    assert countries[0].avg_salary == Decimal("400000.00")
+    assert countries[1].employee_count == 1
+    assert countries[1].avg_salary == Decimal("250000.00")
+
+
 def employee_create(
     employee_code: str,
     *,

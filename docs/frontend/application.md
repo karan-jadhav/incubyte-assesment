@@ -99,6 +99,7 @@ scoped by country in filters and in the employee form.
 - Minimum, maximum, and average salary
 - Job-title salary summary within a country
 - Job-title salary breakdown table
+- Top countries by average salary with configurable result count
 
 The page uses backend aggregation endpoints so calculations stay in sync with
 employee create, update, and delete actions.
@@ -114,4 +115,5 @@ PATCH /employees/{employee_id}
 DELETE /employees/{employee_id}
 GET /insights/salary-summary
 GET /insights/job-title-breakdown
+GET /insights/top-countries
 ```

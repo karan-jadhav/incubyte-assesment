@@ -81,6 +81,7 @@ titles are scoped by the selected country.
 The Insights route supports:
 
 - Country selector
+- Top countries by average salary with configurable result count
 - Country salary summary
 - Job-title selector scoped by country
 - Selected role salary summary
@@ -105,6 +106,7 @@ PATCH /employees/{employee_id}
 DELETE /employees/{employee_id}
 GET /insights/salary-summary
 GET /insights/job-title-breakdown
+GET /insights/top-countries
 ```
 
 ## Development Notes

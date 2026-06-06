@@ -9,6 +9,7 @@ from backend.schemas import (
     EmployeeUpdate,
     JobTitleSalaryBreakdownResponse,
     SalarySummaryResponse,
+    TopCountrySalaryResponse,
 )
 
 
@@ -94,3 +95,11 @@ class SalaryInsightService:
     ) -> JobTitleSalaryBreakdownResponse:
         items = await self.repository.job_title_breakdown(country=country)
         return JobTitleSalaryBreakdownResponse(country=country, items=items)
+
+    async def get_top_countries_by_average_salary(
+        self,
+        *,
+        limit: int,
+    ) -> TopCountrySalaryResponse:
+        items = await self.repository.top_countries_by_average_salary(limit=limit)
+        return TopCountrySalaryResponse(items=items)

@@ -16,6 +16,7 @@ import type {
   ListEmployeesParams,
   LookupListResponse,
   SalarySummaryResponse,
+  TopCountrySalaryResponse,
 } from './types'
 
 export const employeeQueryKeys = {
@@ -46,6 +47,8 @@ export const insightQueryKeys = {
     ] as const,
   jobTitleBreakdown: (country: string) =>
     [...insightQueryKeys.all, 'job-title-breakdown', country] as const,
+  topCountries: (limit: number) =>
+    [...insightQueryKeys.all, 'top-countries', limit] as const,
 }
 
 export function employeeListQueryOptions(params: ListEmployeesParams = {}) {
@@ -121,6 +124,16 @@ export function useJobTitleBreakdown(country: string) {
         },
       ),
     enabled: country.length > 0,
+  })
+}
+
+export function useTopCountriesByAverageSalary(limit = 5) {
+  return useQuery({
+    queryKey: insightQueryKeys.topCountries(limit),
+    queryFn: () =>
+      apiClient.get<TopCountrySalaryResponse>('/insights/top-countries', {
+        query: { limit },
+      }),
   })
 }
 

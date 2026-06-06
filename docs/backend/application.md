@@ -53,6 +53,7 @@ Salary insight endpoints:
 ```text
 GET /insights/salary-summary
 GET /insights/job-title-breakdown
+GET /insights/top-countries
 ```
 
 `GET /insights/salary-summary` requires `country` and supports an optional `job_title`
@@ -60,3 +61,7 @@ query parameter. It returns employee count, minimum salary, maximum salary, and 
 salary for the selected scope.
 
 `GET /insights/job-title-breakdown` requires `country` and returns salary summary rows grouped by job title.
+
+`GET /insights/top-countries` returns countries ordered by average salary in
+their stored native salary values. It supports an optional `limit` query
+parameter from 1 to 20 and defaults to 5.
