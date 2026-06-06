@@ -9,7 +9,9 @@ BACKEND_DIR = Path(__file__).resolve().parent
 
 
 class Settings(BaseSettings):
-    app_name: str = Field(default="Incubyte Salary Management API", validation_alias="APP_NAME")
+    app_name: str = Field(
+        default="Incubyte Salary Management API", validation_alias="APP_NAME"
+    )
     environment: str = Field(default="development", validation_alias="APP_ENVIRONMENT")
     database_url: str = "postgresql+psycopg://incubyte:incubyte@localhost:5432/incubyte"
     debug: bool = Field(default=False, validation_alias="APP_DEBUG")

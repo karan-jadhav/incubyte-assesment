@@ -80,6 +80,29 @@ async def test_list_employee_route_passes_pagination_and_filters():
     }
 
 
+async def test_list_countries_route_returns_lookup_items():
+    service = FakeEmployeeService()
+
+    async with build_client(service) as client:
+        response = await client.get("/employees/countries")
+
+    assert response.status_code == 200
+    assert response.json() == {"items": ["India", "United States"]}
+
+
+async def test_list_job_titles_route_passes_country_filter():
+    service = FakeEmployeeService()
+
+    async with build_client(service) as client:
+        response = await client.get(
+            "/employees/job-titles", params={"country": "India"}
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"items": ["Software Engineer", "Data Analyst"]}
+    assert service.job_title_country == "India"
+
+
 async def test_get_employee_route_returns_404_when_missing():
     service = FakeEmployeeService(missing=True)
 
@@ -129,6 +152,7 @@ class FakeEmployeeService:
         self.updated_data = None
         self.deleted_employee_id = None
         self.list_filters = None
+        self.job_title_country = None
 
     async def create_employee(self, data):
         if self.duplicate_code is not None:
@@ -149,6 +173,13 @@ class FakeEmployeeService:
     async def list_employees(self, **filters):
         self.list_filters = filters
         return [employee_record()], 1
+
+    async def list_countries(self):
+        return ["India", "United States"]
+
+    async def list_job_titles(self, *, country=None):
+        self.job_title_country = country
+        return ["Software Engineer", "Data Analyst"]
 
     async def get_employee(self, employee_id):
         if self.missing:

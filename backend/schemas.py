@@ -44,3 +44,31 @@ class EmployeeListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class LookupListResponse(BaseModel):
+    items: list[str]
+
+
+class SalarySummaryResponse(BaseModel):
+    country: str
+    job_title: str | None = None
+    currency: str | None
+    employee_count: int
+    min_salary: Decimal | None
+    max_salary: Decimal | None
+    avg_salary: Decimal | None
+
+
+class JobTitleSalaryBreakdownItem(BaseModel):
+    job_title: str
+    currency: str | None
+    employee_count: int
+    min_salary: Decimal | None
+    max_salary: Decimal | None
+    avg_salary: Decimal | None
+
+
+class JobTitleSalaryBreakdownResponse(BaseModel):
+    country: str
+    items: list[JobTitleSalaryBreakdownItem]

@@ -9,6 +9,10 @@ from backend.schemas import (
     EmployeeListResponse,
     EmployeeRead,
     EmployeeUpdate,
+    JobTitleSalaryBreakdownItem,
+    JobTitleSalaryBreakdownResponse,
+    LookupListResponse,
+    SalarySummaryResponse,
 )
 
 
@@ -69,6 +73,42 @@ def test_employee_read_and_list_response_serialize_from_attributes():
     assert response.items[0].id == 1
     assert response.items[0].full_name == "Ava Shah"
     assert response.total == 1
+
+
+def test_salary_summary_response_allows_empty_metrics():
+    summary = SalarySummaryResponse(
+        country="India",
+        job_title="Unknown Role",
+        currency=None,
+        employee_count=0,
+        min_salary=None,
+        max_salary=None,
+        avg_salary=None,
+    )
+
+    assert summary.country == "India"
+    assert summary.employee_count == 0
+    assert summary.avg_salary is None
+
+
+def test_lookup_and_job_title_breakdown_responses_serialize_items():
+    lookup = LookupListResponse(items=["India", "United States"])
+    breakdown = JobTitleSalaryBreakdownResponse(
+        country="India",
+        items=[
+            JobTitleSalaryBreakdownItem(
+                job_title="Software Engineer",
+                currency="INR",
+                employee_count=2,
+                min_salary=Decimal("100000.00"),
+                max_salary=Decimal("200000.00"),
+                avg_salary=Decimal("150000.00"),
+            )
+        ],
+    )
+
+    assert lookup.items == ["India", "United States"]
+    assert breakdown.items[0].job_title == "Software Engineer"
 
 
 class FakeEmployee:

@@ -5,7 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_session
 from backend.repositories import EmployeeRepository
-from backend.schemas import EmployeeCreate, EmployeeListResponse, EmployeeRead, EmployeeUpdate
+from backend.schemas import (
+    EmployeeCreate,
+    EmployeeListResponse,
+    EmployeeRead,
+    EmployeeUpdate,
+    LookupListResponse,
+)
 from backend.services import (
     DuplicateEmployeeCodeError,
     EmployeeNotFoundError,
@@ -59,6 +65,21 @@ async def list_employees(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/countries", response_model=LookupListResponse)
+async def list_countries(
+    service: Annotated[EmployeeService, Depends(get_employee_service)],
+) -> LookupListResponse:
+    return LookupListResponse(items=await service.list_countries())
+
+
+@router.get("/job-titles", response_model=LookupListResponse)
+async def list_job_titles(
+    service: Annotated[EmployeeService, Depends(get_employee_service)],
+    country: str | None = None,
+) -> LookupListResponse:
+    return LookupListResponse(items=await service.list_job_titles(country=country))
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)

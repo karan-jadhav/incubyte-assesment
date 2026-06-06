@@ -1,9 +1,16 @@
-from sqlalchemy import func, select
+from decimal import Decimal
+
+from sqlalchemy import distinct, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models import Employee
-from backend.schemas import EmployeeCreate, EmployeeUpdate
+from backend.schemas import (
+    EmployeeCreate,
+    EmployeeUpdate,
+    JobTitleSalaryBreakdownItem,
+    SalarySummaryResponse,
+)
 
 
 class DuplicateEmployeeCodeRepositoryError(Exception):
@@ -67,6 +74,19 @@ class EmployeeRepository:
         await self.session.delete(employee)
         await self.session.commit()
 
+    async def list_countries(self) -> list[str]:
+        statement = select(Employee.country).distinct().order_by(Employee.country)
+        result = await self.session.scalars(statement)
+        return list(result.all())
+
+    async def list_job_titles(self, *, country: str | None = None) -> list[str]:
+        statement = select(Employee.job_title).distinct()
+        if country:
+            statement = statement.where(Employee.country == country)
+        statement = statement.order_by(Employee.job_title)
+        result = await self.session.scalars(statement)
+        return list(result.all())
+
     async def _count(self, filters: list) -> int:
         statement = select(func.count()).select_from(Employee).where(*filters)
         result = await self.session.scalar(statement)
@@ -87,3 +107,95 @@ class EmployeeRepository:
         if job_title:
             filters.append(Employee.job_title == job_title)
         return filters
+
+
+class SalaryInsightRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def salary_summary(
+        self,
+        *,
+        country: str,
+        job_title: str | None = None,
+    ) -> SalarySummaryResponse:
+        filters = [Employee.country == country]
+        if job_title:
+            filters.append(Employee.job_title == job_title)
+
+        statement = select(
+            func.count(Employee.id),
+            func.min(Employee.salary),
+            func.max(Employee.salary),
+            func.avg(Employee.salary),
+            func.count(distinct(Employee.currency)),
+            func.min(Employee.currency),
+        ).where(*filters)
+        row = (await self.session.execute(statement)).one()
+        employee_count = int(row[0] or 0)
+
+        return SalarySummaryResponse(
+            country=country,
+            job_title=job_title,
+            currency=self._resolve_currency(
+                employee_count=employee_count,
+                distinct_currency_count=int(row[4] or 0),
+                currency=row[5],
+            ),
+            employee_count=employee_count,
+            min_salary=row[1],
+            max_salary=row[2],
+            avg_salary=self._round_decimal(row[3]),
+        )
+
+    async def job_title_breakdown(
+        self,
+        *,
+        country: str,
+    ) -> list[JobTitleSalaryBreakdownItem]:
+        statement = (
+            select(
+                Employee.job_title,
+                func.count(Employee.id),
+                func.min(Employee.salary),
+                func.max(Employee.salary),
+                func.avg(Employee.salary),
+                func.count(distinct(Employee.currency)),
+                func.min(Employee.currency),
+            )
+            .where(Employee.country == country)
+            .group_by(Employee.job_title)
+            .order_by(Employee.job_title)
+        )
+        rows = (await self.session.execute(statement)).all()
+        return [
+            JobTitleSalaryBreakdownItem(
+                job_title=row[0],
+                currency=self._resolve_currency(
+                    employee_count=int(row[1] or 0),
+                    distinct_currency_count=int(row[5] or 0),
+                    currency=row[6],
+                ),
+                employee_count=int(row[1] or 0),
+                min_salary=row[2],
+                max_salary=row[3],
+                avg_salary=self._round_decimal(row[4]),
+            )
+            for row in rows
+        ]
+
+    def _resolve_currency(
+        self,
+        *,
+        employee_count: int,
+        distinct_currency_count: int,
+        currency: str | None,
+    ) -> str | None:
+        if employee_count == 0 or distinct_currency_count != 1:
+            return None
+        return currency
+
+    def _round_decimal(self, value: Decimal | None) -> Decimal | None:
+        if value is None:
+            return None
+        return value.quantize(Decimal("0.01"))

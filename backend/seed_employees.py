@@ -100,7 +100,8 @@ def generate_employee_rows(
             "currency": currency,
             "salary": salary.quantize(Decimal("0.01")),
             "employment_type": randomizer.choice(EMPLOYMENT_TYPES),
-            "hire_date": hire_start + timedelta(days=randomizer.randint(0, hire_range_days)),
+            "hire_date": hire_start
+            + timedelta(days=randomizer.randint(0, hire_range_days)),
         }
 
 

@@ -88,6 +88,18 @@ async def test_service_delete_raises_when_missing():
         raise AssertionError("Expected EmployeeNotFoundError")
 
 
+async def test_service_lists_countries_and_job_titles():
+    repository = FakeRepository()
+    service = EmployeeService(repository)
+
+    countries = await service.list_countries()
+    job_titles = await service.list_job_titles(country="India")
+
+    assert countries == ["India"]
+    assert job_titles == ["Software Engineer"]
+    assert repository.job_title_country == "India"
+
+
 class FakeRepository:
     def __init__(self, employee=object(), duplicate_code: str | None = None):
         self.employee = employee
@@ -96,6 +108,7 @@ class FakeRepository:
         self.updated_employee = None
         self.updated_data = None
         self.deleted_employee = None
+        self.job_title_country = None
 
     async def create(self, data):
         if self.duplicate_code is not None:
@@ -115,3 +128,10 @@ class FakeRepository:
 
     async def delete(self, employee):
         self.deleted_employee = employee
+
+    async def list_countries(self):
+        return ["India"]
+
+    async def list_job_titles(self, *, country=None):
+        self.job_title_country = country
+        return ["Software Engineer"]

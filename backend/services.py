@@ -1,6 +1,15 @@
 from backend.models import Employee
-from backend.repositories import DuplicateEmployeeCodeRepositoryError, EmployeeRepository
-from backend.schemas import EmployeeCreate, EmployeeUpdate
+from backend.repositories import (
+    DuplicateEmployeeCodeRepositoryError,
+    EmployeeRepository,
+    SalaryInsightRepository,
+)
+from backend.schemas import (
+    EmployeeCreate,
+    EmployeeUpdate,
+    JobTitleSalaryBreakdownResponse,
+    SalarySummaryResponse,
+)
 
 
 class DuplicateEmployeeCodeError(Exception):
@@ -55,3 +64,33 @@ class EmployeeService:
     async def delete_employee(self, employee_id: int) -> None:
         employee = await self.get_employee(employee_id)
         await self.repository.delete(employee)
+
+    async def list_countries(self) -> list[str]:
+        return await self.repository.list_countries()
+
+    async def list_job_titles(self, *, country: str | None = None) -> list[str]:
+        return await self.repository.list_job_titles(country=country)
+
+
+class SalaryInsightService:
+    def __init__(self, repository: SalaryInsightRepository):
+        self.repository = repository
+
+    async def get_salary_summary(
+        self,
+        *,
+        country: str,
+        job_title: str | None = None,
+    ) -> SalarySummaryResponse:
+        return await self.repository.salary_summary(
+            country=country,
+            job_title=job_title,
+        )
+
+    async def get_job_title_breakdown(
+        self,
+        *,
+        country: str,
+    ) -> JobTitleSalaryBreakdownResponse:
+        items = await self.repository.job_title_breakdown(country=country)
+        return JobTitleSalaryBreakdownResponse(country=country, items=items)

@@ -5,7 +5,10 @@ from sqlalchemy import delete
 
 from backend.database import async_session_maker
 from backend.models import Employee
-from backend.repositories import DuplicateEmployeeCodeRepositoryError, EmployeeRepository
+from backend.repositories import (
+    DuplicateEmployeeCodeRepositoryError,
+    EmployeeRepository,
+)
 from backend.schemas import EmployeeCreate, EmployeeUpdate
 
 
@@ -113,6 +116,32 @@ async def test_repository_lists_with_pagination_search_and_filters():
 
         assert total == 3
         assert len(page_two) == 1
+
+
+async def test_repository_lists_distinct_countries_and_job_titles():
+    unique_country = f"Integration Country {uuid4()}"
+    async with async_session_maker() as session:
+        repository = EmployeeRepository(session)
+        await repository.create(
+            employee_create(
+                "IT-LOOKUP-001",
+                country=unique_country,
+                job_title="Software Engineer",
+            )
+        )
+        await repository.create(
+            employee_create(
+                "IT-LOOKUP-002",
+                country=unique_country,
+                job_title="Data Analyst",
+            )
+        )
+
+        countries = await repository.list_countries()
+        job_titles = await repository.list_job_titles(country=unique_country)
+
+    assert unique_country in countries
+    assert job_titles == ["Data Analyst", "Software Engineer"]
 
 
 def employee_create(

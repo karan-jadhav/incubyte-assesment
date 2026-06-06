@@ -97,8 +97,7 @@ def test_format_summary_includes_counts_and_elapsed_time():
     )
 
     assert format_summary(summary) == (
-        "Seeded employees: requested=10 inserted=7 skipped=3 reset=false "
-        "elapsed=1.23s"
+        "Seeded employees: requested=10 inserted=7 skipped=3 reset=false elapsed=1.23s"
     )
 
 
