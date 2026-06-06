@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   ChevronLeft,
@@ -15,6 +15,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   useCreateEmployeeMutation,
   useDeleteEmployeeMutation,
+  useEmployeeCountries,
+  useEmployeeJobTitles,
   useEmployees,
   useUpdateEmployeeMutation,
 } from '../api/hooks'
@@ -69,24 +71,23 @@ function EmployeesRoute() {
   const createEmployee = useCreateEmployeeMutation()
   const updateEmployee = useUpdateEmployeeMutation(editingEmployee?.id ?? 0)
   const deleteEmployee = useDeleteEmployeeMutation()
+  const countriesQuery = useEmployeeCountries()
+  const jobTitlesQuery = useEmployeeJobTitles(draftFilters.country || undefined)
+  const formJobTitlesQuery = useEmployeeJobTitles(
+    formValues.country || undefined,
+  )
 
   const employeeList = employeesQuery.data
   const employees = employeeList?.items ?? []
   const total = employeeList?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const isFormSubmitting = createEmployee.isPending || updateEmployee.isPending
-
-  const countrySuggestions = useMemo(
-    () =>
-      Array.from(new Set(employees.map((employee) => employee.country))).sort(),
-    [employees],
-  )
-  const jobTitleSuggestions = useMemo(
-    () =>
-      Array.from(
-        new Set(employees.map((employee) => employee.job_title)),
-      ).sort(),
-    [employees],
+  const countries = countriesQuery.data?.items ?? []
+  const jobTitles = jobTitlesQuery.data?.items ?? []
+  const formCountries = mergeOptions(countries, formValues.country)
+  const formJobTitles = mergeOptions(
+    formJobTitlesQuery.data?.items ?? [],
+    formValues.job_title,
   )
   const searchHint =
     search.trim().length > 0 && search.trim().length <= 2
@@ -154,6 +155,29 @@ function EmployeesRoute() {
   function updateSearch(value: string) {
     setSearch(value)
     setPage(1)
+  }
+
+  function updateCountryFilter(country: string) {
+    setDraftFilters((current) => ({
+      ...current,
+      country,
+      jobTitle: '',
+    }))
+  }
+
+  function updateJobTitleFilter(jobTitle: string) {
+    setDraftFilters((current) => ({
+      ...current,
+      jobTitle,
+    }))
+  }
+
+  function updateFormCountry(country: string) {
+    setFormValues((current) => ({
+      ...current,
+      country,
+      job_title: '',
+    }))
   }
 
   function updateFormValue(field: keyof EmployeeCreateInput, value: string) {
@@ -236,34 +260,44 @@ function EmployeesRoute() {
 
         <label>
           <span className="sr-only">Filter by country</span>
-          <input
+          <select
             className="h-10 w-full rounded-md border border-[#cfc4b4] bg-white px-3 text-sm outline-none transition placeholder:text-[#8b8175] focus:border-[#1f5e67] focus:ring-2 focus:ring-[#1f5e67]/20"
-            list="employee-countries"
-            onChange={(event) =>
-              setDraftFilters((current) => ({
-                ...current,
-                country: event.target.value,
-              }))
-            }
-            placeholder="Country"
+            disabled={countriesQuery.isLoading}
+            onChange={(event) => updateCountryFilter(event.target.value)}
             value={draftFilters.country}
-          />
+          >
+            <option value="">
+              {countriesQuery.isLoading
+                ? 'Loading countries...'
+                : 'All countries'}
+            </option>
+            {countries.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
           <span className="sr-only">Filter by job title</span>
-          <input
+          <select
             className="h-10 w-full rounded-md border border-[#cfc4b4] bg-white px-3 text-sm outline-none transition placeholder:text-[#8b8175] focus:border-[#1f5e67] focus:ring-2 focus:ring-[#1f5e67]/20"
-            list="employee-job-titles"
-            onChange={(event) =>
-              setDraftFilters((current) => ({
-                ...current,
-                jobTitle: event.target.value,
-              }))
-            }
-            placeholder="Job title"
+            disabled={jobTitlesQuery.isLoading}
+            onChange={(event) => updateJobTitleFilter(event.target.value)}
             value={draftFilters.jobTitle}
-          />
+          >
+            <option value="">
+              {jobTitlesQuery.isLoading
+                ? 'Loading job titles...'
+                : 'All job titles'}
+            </option>
+            {jobTitles.map((jobTitle) => (
+              <option key={jobTitle} value={jobTitle}>
+                {jobTitle}
+              </option>
+            ))}
+          </select>
         </label>
 
         <div className="flex gap-2">
@@ -282,17 +316,6 @@ function EmployeesRoute() {
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-
-        <datalist id="employee-countries">
-          {countrySuggestions.map((suggestion) => (
-            <option key={suggestion} value={suggestion} />
-          ))}
-        </datalist>
-        <datalist id="employee-job-titles">
-          {jobTitleSuggestions.map((suggestion) => (
-            <option key={suggestion} value={suggestion} />
-          ))}
-        </datalist>
       </form>
 
       {formMode ? (
@@ -305,9 +328,14 @@ function EmployeesRoute() {
             error={getErrorMessage(
               createEmployee.error ?? updateEmployee.error,
             )}
+            countries={formCountries}
             isSubmitting={isFormSubmitting}
+            isCountriesLoading={countriesQuery.isLoading}
+            isJobTitlesLoading={formJobTitlesQuery.isLoading}
+            jobTitles={formJobTitles}
             mode={formMode}
             onChange={updateFormValue}
+            onCountryChange={updateFormCountry}
             onClose={closeForm}
             onSubmit={submitEmployeeForm}
             values={formValues}
@@ -464,20 +492,30 @@ function EmployeesRoute() {
 }
 
 type EmployeeFormProps = {
+  countries: Array<string>
   error: string | null
+  isCountriesLoading: boolean
+  isJobTitlesLoading: boolean
   isSubmitting: boolean
+  jobTitles: Array<string>
   mode: FormMode
   onChange: (field: keyof EmployeeCreateInput, value: string) => void
+  onCountryChange: (country: string) => void
   onClose: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   values: EmployeeCreateInput
 }
 
 function EmployeeForm({
+  countries,
   error,
+  isCountriesLoading,
+  isJobTitlesLoading,
   isSubmitting,
+  jobTitles,
   mode,
   onChange,
+  onCountryChange,
   onClose,
   onSubmit,
   values,
@@ -500,9 +538,29 @@ function EmployeeForm({
           required
           value={values.full_name}
         />
-        <FormField
+        <FormSelect
+          disabled={isCountriesLoading}
+          label="Country"
+          onChange={onCountryChange}
+          options={countries}
+          placeholder={
+            isCountriesLoading ? 'Loading countries...' : 'Select country'
+          }
+          required
+          value={values.country}
+        />
+        <FormSelect
+          disabled={!values.country || isJobTitlesLoading}
           label="Job title"
           onChange={(value) => onChange('job_title', value)}
+          options={jobTitles}
+          placeholder={
+            !values.country
+              ? 'Select country first'
+              : isJobTitlesLoading
+                ? 'Loading job titles...'
+                : 'Select job title'
+          }
           required
           value={values.job_title}
         />
@@ -511,12 +569,6 @@ function EmployeeForm({
           onChange={(value) => onChange('department', value)}
           required
           value={values.department}
-        />
-        <FormField
-          label="Country"
-          onChange={(value) => onChange('country', value)}
-          required
-          value={values.country}
         />
         <FormField
           label="Currency"
@@ -734,6 +786,48 @@ function FormField({
   )
 }
 
+type FormSelectProps = {
+  disabled?: boolean
+  label: string
+  onChange: (value: string) => void
+  options: Array<string>
+  placeholder: string
+  required?: boolean
+  value: string
+}
+
+function FormSelect({
+  disabled = false,
+  label,
+  onChange,
+  options,
+  placeholder,
+  required = false,
+  value,
+}: FormSelectProps) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold tracking-[0.08em] text-[#6d6255] uppercase">
+        {label}
+      </span>
+      <select
+        className="mt-1 h-10 w-full rounded-md border border-[#cfc4b4] bg-white px-3 text-sm outline-none transition focus:border-[#1f5e67] focus:ring-2 focus:ring-[#1f5e67]/20 disabled:bg-[#f4eee5] disabled:text-[#7b7165]"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        required={required}
+        value={value}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function TableMessage({
   message,
   tone = 'neutral',
@@ -770,6 +864,17 @@ function normalizeCreateInput(
     employment_type: values.employment_type.trim(),
     hire_date: values.hire_date,
   }
+}
+
+function mergeOptions(options: Array<string>, selectedValue: string) {
+  const normalizedSelectedValue = selectedValue.trim()
+  if (!normalizedSelectedValue || options.includes(normalizedSelectedValue)) {
+    return options
+  }
+
+  return [...options, normalizedSelectedValue].sort((first, second) =>
+    first.localeCompare(second),
+  )
 }
 
 function getErrorMessage(error: unknown): string | null {
