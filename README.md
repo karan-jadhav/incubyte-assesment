@@ -1,31 +1,35 @@
 # Salary Management Tool
 
-Minimal salary management application for HR workflows. The app supports
-employee record management, salary search/filtering, seeded data, and salary
-insights by country and job title.
+Salary Management Tool is a full-stack HR application for managing employee
+salary records and reviewing compensation insights. It includes a FastAPI
+backend, PostgreSQL persistence, deterministic employee seeding, and a React
+frontend with employee workflows and salary analytics.
 
 ## Features
 
 - Employee create, read, update, and delete
 - Paginated employee table
-- Debounced employee name search
+- Debounced employee search
 - Country and job-title filters
 - Backend-backed country and job-title dropdowns
+- Add/edit employee modal and delete confirmation dialog
 - Country salary summary
-- Job-title salary summary within a country
-- Salary breakdown by job title
-- Top countries by average salary with configurable result count
+- Role-specific salary summary within a country
+- Job-title salary breakdown within a country
+- Top country salary spread chart and table
+- Employee distribution and salary charts with Recharts
 - Deterministic seed script for 10,000 employees
+- Docker production setup with Traefik, HTTPS, frontend, backend, and Postgres
 
 ## Stack
 
 Backend:
 
-- Python 3.14+
+- Python 3.13+ for local development
 - FastAPI
 - SQLAlchemy async ORM
 - Alembic
-- PostgreSQL 18
+- PostgreSQL
 - pytest
 - Ruff
 
@@ -36,48 +40,165 @@ Frontend:
 - Bun
 - TanStack Router
 - TanStack Query
+- Recharts
 - Tailwind CSS
 - Lucide React icons
+
+Deployment:
+
+- Docker Compose
+- Backend image: `python:3.14-slim`
+- Frontend image: `oven/bun:latest`
+- Database image: `postgres:18`
+- Reverse proxy: `traefik:v3`
 
 ## Project Structure
 
 ```text
-backend/       FastAPI application, services, repositories, schemas, tests
-frontend/      React application
+backend/       FastAPI app, config, routes, schemas, services, repositories, tests
+frontend/      React app, routes, API hooks, Bun production static server
 alembic/       Database migrations
 docs/          PRD and implementation notes
 docker-compose.yml
 pyproject.toml
 ```
 
+## Prerequisites
+
+Local development:
+
+- Python 3.13+
+- `uv`
+- Bun
+- Docker and Docker Compose for PostgreSQL
+
+Production Docker deployment:
+
+- Docker Engine
+- Docker Compose plugin
+- A domain pointing to the server
+- Ports `80` and `443` open for Traefik and Let's Encrypt
+
+## Environment Files
+
+Create local backend env from the example:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Default local values:
+
+```env
+APP_NAME="Incubyte Salary Management API"
+APP_ENVIRONMENT=development
+DATABASE_URL=postgresql+psycopg://incubyte:incubyte@localhost:5432/incubyte
+APP_DEBUG=false
+POSTGRES_USER=incubyte
+POSTGRES_PASSWORD=incubyte
+POSTGRES_DB=incubyte
+```
+
+For Docker deployment, create `backend/.env.docker` on the server:
+
+```env
+APP_NAME="Incubyte Salary Management API"
+APP_ENVIRONMENT=production
+DATABASE_URL=postgresql+psycopg://incubyte:CHANGE_ME@postgres:5432/incubyte
+APP_DEBUG=false
+POSTGRES_USER=incubyte
+POSTGRES_PASSWORD=CHANGE_ME
+POSTGRES_DB=incubyte
+```
+
+Keep `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`
+aligned. The Docker database hostname is `postgres`, not `localhost`.
+
+## Local Setup
+
+Install backend dependencies:
+
+```bash
+uv sync
+```
+
+Start PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+Apply migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+Seed deterministic employee data:
+
+```bash
+uv run python -m backend.seed_employees
+```
+
+Start the backend API:
+
+```bash
+uv run uvicorn backend.main:app --reload
+```
+
+The backend runs at:
+
+```text
+http://localhost:8000
+```
+
+Health check:
+
+```text
+GET http://localhost:8000/health
+```
+
+Install frontend dependencies:
+
+```bash
+cd frontend
+bun install
+```
+
+Start the frontend dev server:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000 bun run dev
+```
+
+The frontend runs at:
+
+```text
+http://localhost:3000
+```
+
 ## Docker Deployment
 
-The repository includes separate production Dockerfiles:
-
-- [backend/Dockerfile](backend/Dockerfile)
-- [frontend/Dockerfile](frontend/Dockerfile)
-
-Docker Compose also includes Traefik routing for:
+The production Docker setup serves:
 
 ```text
 https://incubyte-assesment.jadhav.dev
 ```
 
-Runtime images:
-
-- Backend: `python:3.14-slim`
-- Frontend build/runtime: `oven/bun:latest`
-- Router: `traefik:v3`
-- Database: `postgres:18`
-
-Routes:
+Routing:
 
 ```text
 /      frontend container
 /api   backend container, with /api stripped before forwarding
 ```
 
-Start the full stack with Traefik:
+Build and start all containers:
+
+```bash
+docker compose up -d --build
+```
+
+For production, set the Let's Encrypt ACME email when starting the full stack:
 
 ```bash
 TRAEFIK_ACME_EMAIL=admin@jadhav.dev docker compose up -d --build
@@ -95,63 +216,46 @@ Seed employee data:
 docker compose exec backend python -m backend.seed_employees
 ```
 
-The domain must point to the host running Docker, and ports `80` and `443` must
-be reachable for Traefik and Let's Encrypt.
-
-Backend container environment values are loaded from:
-
-```text
-backend/.env.docker
-```
-
-The same file also provides `POSTGRES_USER`, `POSTGRES_PASSWORD`, and
-`POSTGRES_DB` to the Postgres container. Keep those values aligned with
-`DATABASE_URL`.
-
-Host-local backend runs still use `backend/.env`.
-
-## Local Setup
-
-Start PostgreSQL:
+Check containers:
 
 ```bash
-docker compose up -d postgres
+docker compose ps
 ```
 
-Apply database migrations:
+View logs with Docker timestamps:
 
 ```bash
-uv run alembic upgrade head
+docker compose logs -f -t backend
+docker compose logs -f -t frontend
 ```
 
-Seed default employee data:
+The backend image also configures Uvicorn logs with timestamps and proxy header
+support, so access logs can show the original forwarded client IP from Traefik.
+
+## Rebuild Commands
+
+Rebuild only the frontend app container:
 
 ```bash
-uv run python -m backend.seed_employees
+docker compose up -d frontend --build --no-deps
 ```
 
-Start the backend API:
+Rebuild only the backend app container:
 
 ```bash
-uv run uvicorn backend.main:app --reload
+docker compose up -d backend --build --no-deps
 ```
 
-Install frontend dependencies:
+`--no-deps` prevents Docker Compose from walking service dependency chains and
+restarting dependency containers such as Postgres during app-only rebuilds.
+
+Run migrations after backend changes that include schema updates:
 
 ```bash
-cd frontend
-bun install
+docker compose exec backend alembic upgrade head
 ```
 
-Start the frontend:
-
-```bash
-VITE_API_BASE_URL=http://localhost:8000 bun run dev
-```
-
-The frontend dev server runs on port `3000`.
-
-## API
+## API Endpoints
 
 Health:
 
@@ -159,7 +263,7 @@ Health:
 GET /health
 ```
 
-Employee endpoints:
+Employees:
 
 ```text
 POST /employees
@@ -171,7 +275,7 @@ PATCH /employees/{employee_id}
 DELETE /employees/{employee_id}
 ```
 
-Insight endpoints:
+Insights:
 
 ```text
 GET /insights/salary-summary
@@ -196,6 +300,48 @@ cd frontend
 bun run lint
 bun run build
 ```
+
+Production image smoke checks:
+
+```bash
+docker compose build backend frontend
+docker compose up -d
+docker compose ps
+```
+
+## Troubleshooting
+
+If the backend cannot connect to the database locally, verify that Postgres is
+running and that `backend/.env` uses `localhost` in `DATABASE_URL`.
+
+If the backend cannot connect to the database in Docker, verify that
+`backend/.env.docker` uses `postgres` in `DATABASE_URL`.
+
+If HTTPS certificates are not issued, verify that the domain points to the
+server and that ports `80` and `443` are reachable.
+
+If frontend API calls fail in Docker, verify that the frontend was built with:
+
+```text
+VITE_API_BASE_URL=/api
+```
+
+The included Compose build args already set this value.
+
+## AI Assistance
+
+OpenAI Codex was used as the AI coding assistant for this project. The workflow
+was agent-assisted but developer-directed:
+
+- I used Codex to read the PRD and existing code, then break the work into
+  backend, frontend, Docker, and documentation tasks.
+- Codex helped implement repository, service, route, React, TanStack Query,
+  Docker, and README changes across the project.
+- I reviewed the generated changes, clarified requirements during the build,
+  and directed follow-up refinements such as modal behavior, dropdown UX,
+  Recharts insights, Docker serving, logging, and deployment docs.
+- Validation was performed through project commands such as `uv run ruff check
+backend`, `bun run lint`, and `bun run build`.
 
 ## Documentation
 
