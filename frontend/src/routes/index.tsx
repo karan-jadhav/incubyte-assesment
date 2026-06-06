@@ -4,15 +4,19 @@ export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
   return (
-    <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+    <section>
       <div>
-        <p className="text-sm font-medium text-[#806941]">Salary Management</p>
+        <p className="text-sm font-medium text-[#806941]">
+          Salary Management Dashboard
+        </p>
         <h2 className="mt-1 max-w-3xl text-3xl font-semibold tracking-normal">
-          Manage employee salary records without spreadsheet drift.
+          Manage employee compensation data with searchable records and salary
+          insights.
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5f574c]">
-          The application shell and API client are in place. Employee workflows
-          can now be wired against the FastAPI endpoints.
+          Review a seeded workforce dataset, maintain employee records, filter
+          by country and role, and compare compensation trends through
+          country-level and job-title analytics.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -30,24 +34,6 @@ function Home() {
           </Link>
         </div>
       </div>
-
-      <dl className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-        {[
-          ['Dataset', '10,000 employees'],
-          ['Primary workflow', 'CRUD + filters'],
-          ['Reporting', 'Country and role'],
-        ].map(([label, value]) => (
-          <div
-            key={label}
-            className="rounded-md border border-[#d8d0c2] bg-white p-4"
-          >
-            <dt className="text-xs font-semibold tracking-[0.08em] text-[#806941] uppercase">
-              {label}
-            </dt>
-            <dd className="mt-2 text-lg font-semibold">{value}</dd>
-          </div>
-        ))}
-      </dl>
     </section>
   )
 }

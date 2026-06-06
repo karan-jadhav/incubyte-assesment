@@ -49,7 +49,6 @@ function EmployeesRoute() {
     country: '',
     jobTitle: '',
   })
-  const [draftFilters, setDraftFilters] = useState(filters)
   const [search, setSearch] = useState('')
   const [formMode, setFormMode] = useState<FormMode | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
@@ -72,7 +71,7 @@ function EmployeesRoute() {
   const updateEmployee = useUpdateEmployeeMutation(editingEmployee?.id ?? 0)
   const deleteEmployee = useDeleteEmployeeMutation()
   const countriesQuery = useEmployeeCountries()
-  const jobTitlesQuery = useEmployeeJobTitles(draftFilters.country || undefined)
+  const jobTitlesQuery = useEmployeeJobTitles(filters.country || undefined)
   const formJobTitlesQuery = useEmployeeJobTitles(
     formValues.country || undefined,
   )
@@ -134,12 +133,6 @@ function EmployeesRoute() {
     deleteEmployee.reset()
   }
 
-  function applyFilters(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setFilters(draftFilters)
-    setPage(1)
-  }
-
   function clearFilters() {
     const clearedFilters = {
       country: '',
@@ -147,7 +140,6 @@ function EmployeesRoute() {
     }
 
     setSearch('')
-    setDraftFilters(clearedFilters)
     setFilters(clearedFilters)
     setPage(1)
   }
@@ -158,18 +150,19 @@ function EmployeesRoute() {
   }
 
   function updateCountryFilter(country: string) {
-    setDraftFilters((current) => ({
-      ...current,
+    setFilters({
       country,
       jobTitle: '',
-    }))
+    })
+    setPage(1)
   }
 
   function updateJobTitleFilter(jobTitle: string) {
-    setDraftFilters((current) => ({
-      ...current,
+    setFilters((current) => ({
+      country: current.country,
       jobTitle,
     }))
+    setPage(1)
   }
 
   function updateFormCountry(country: string) {
@@ -237,10 +230,7 @@ function EmployeesRoute() {
         </button>
       </div>
 
-      <form
-        className="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_12rem_12rem_auto]"
-        onSubmit={applyFilters}
-      >
+      <div className="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_12rem_12rem_auto]">
         <div>
           <label className="relative block">
             <span className="sr-only">Search employees by name</span>
@@ -264,7 +254,7 @@ function EmployeesRoute() {
             className="h-10 w-full rounded-md border border-[#cfc4b4] bg-white px-3 text-sm outline-none transition placeholder:text-[#8b8175] focus:border-[#1f5e67] focus:ring-2 focus:ring-[#1f5e67]/20"
             disabled={countriesQuery.isLoading}
             onChange={(event) => updateCountryFilter(event.target.value)}
-            value={draftFilters.country}
+            value={filters.country}
           >
             <option value="">
               {countriesQuery.isLoading
@@ -285,7 +275,7 @@ function EmployeesRoute() {
             className="h-10 w-full rounded-md border border-[#cfc4b4] bg-white px-3 text-sm outline-none transition placeholder:text-[#8b8175] focus:border-[#1f5e67] focus:ring-2 focus:ring-[#1f5e67]/20"
             disabled={jobTitlesQuery.isLoading}
             onChange={(event) => updateJobTitleFilter(event.target.value)}
-            value={draftFilters.jobTitle}
+            value={filters.jobTitle}
           >
             <option value="">
               {jobTitlesQuery.isLoading
@@ -302,12 +292,6 @@ function EmployeesRoute() {
 
         <div className="flex gap-2">
           <button
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#231f20] px-4 text-sm font-semibold text-white transition hover:bg-[#3a3435]"
-            type="submit"
-          >
-            Apply
-          </button>
-          <button
             className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-[#cfc4b4] bg-white text-[#5c554b] transition hover:bg-[#fffaf1]"
             onClick={clearFilters}
             title="Clear filters"
@@ -316,7 +300,7 @@ function EmployeesRoute() {
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-      </form>
+      </div>
 
       {formMode ? (
         <Modal

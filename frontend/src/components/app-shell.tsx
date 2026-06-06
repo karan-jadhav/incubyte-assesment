@@ -20,12 +20,16 @@ export function AppShell() {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 shrink-0 border-r border-[#d8d0c2] bg-[#fffaf1] lg:block">
           <div className="flex h-full flex-col">
-            <div className="border-b border-[#d8d0c2] px-6 py-5">
+            <Link
+              to="/"
+              className="block border-b border-[#d8d0c2] px-6 py-5 transition hover:bg-[#f4eee5] focus:ring-2 focus:ring-[#1f5e67]/30 focus:outline-none"
+              aria-label="Go to dashboard"
+            >
               <p className="text-xs font-semibold tracking-[0.22em] text-[#806941] uppercase">
                 ACME
               </p>
               <h1 className="mt-2 text-xl font-semibold">Salary Desk</h1>
-            </div>
+            </Link>
 
             <nav
               className="flex-1 space-y-1 px-3 py-4"
@@ -56,12 +60,16 @@ export function AppShell() {
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 border-b border-[#d8d0c2] bg-[#fffaf1]/95 px-4 backdrop-blur lg:hidden">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4">
-              <div>
+              <Link
+                to="/"
+                className="rounded-md px-2 py-1 transition hover:bg-[#f4eee5] focus:ring-2 focus:ring-[#1f5e67]/30 focus:outline-none"
+                aria-label="Go to dashboard"
+              >
                 <p className="text-xs font-semibold tracking-[0.2em] text-[#806941] uppercase">
                   ACME
                 </p>
                 <p className="text-base font-semibold">Salary Desk</p>
-              </div>
+              </Link>
 
               <nav
                 className="flex rounded-md border border-[#d8d0c2] bg-white p-1"
