@@ -104,6 +104,10 @@ Backend container environment values are loaded from:
 backend/.env.docker
 ```
 
+The same file also provides `POSTGRES_USER`, `POSTGRES_PASSWORD`, and
+`POSTGRES_DB` to the Postgres container. Keep those values aligned with
+`DATABASE_URL`.
+
 Host-local backend runs still use `backend/.env`.
 
 ## Local Setup

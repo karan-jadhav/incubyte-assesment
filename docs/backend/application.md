@@ -11,7 +11,8 @@ Tracked example values are available in `backend/.env.example`.
 
 Docker Compose loads backend container settings from `backend/.env.docker`.
 That file uses the Compose database service name, `postgres`, instead of
-`localhost`.
+`localhost`. It also provides `POSTGRES_USER`, `POSTGRES_PASSWORD`, and
+`POSTGRES_DB` to the Postgres container.
 
 Database access uses SQLAlchemy's async engine and sessions. The local database URL uses the `postgresql+psycopg` driver.
 
