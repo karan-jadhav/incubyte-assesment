@@ -33,6 +33,7 @@ Frontend:
 
 - React
 - Vite
+- Bun
 - TanStack Router
 - TanStack Query
 - Tailwind CSS
@@ -48,6 +49,62 @@ docs/          PRD and implementation notes
 docker-compose.yml
 pyproject.toml
 ```
+
+## Docker Deployment
+
+The repository includes separate production Dockerfiles:
+
+- [backend/Dockerfile](backend/Dockerfile)
+- [frontend/Dockerfile](frontend/Dockerfile)
+
+Docker Compose also includes Traefik routing for:
+
+```text
+https://incubyte-assesment.jadhav.dev
+```
+
+Runtime images:
+
+- Backend: `python:3.14-slim`
+- Frontend build/runtime: `oven/bun:latest`
+- Router: `traefik:v3`
+- Database: `postgres:18`
+
+Routes:
+
+```text
+/      frontend container
+/api   backend container, with /api stripped before forwarding
+```
+
+Start the full stack with Traefik:
+
+```bash
+TRAEFIK_ACME_EMAIL=admin@jadhav.dev docker compose up -d --build
+```
+
+Apply migrations in the backend container:
+
+```bash
+docker compose exec backend alembic upgrade head
+```
+
+Seed employee data:
+
+```bash
+docker compose exec backend python -m backend.seed_employees
+```
+
+The domain must point to the host running Docker, and ports `80` and `443` must
+be reachable for Traefik and Let's Encrypt.
+
+Backend container environment values are loaded from:
+
+```text
+backend/.env.docker
+```
+
+Host-local backend runs still use `backend/.env`.
 
 ## Local Setup
 
@@ -79,13 +136,13 @@ Install frontend dependencies:
 
 ```bash
 cd frontend
-npm install
+bun install
 ```
 
 Start the frontend:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8000 npm run dev
+VITE_API_BASE_URL=http://localhost:8000 bun run dev
 ```
 
 The frontend dev server runs on port `3000`.
@@ -132,8 +189,8 @@ Frontend:
 
 ```bash
 cd frontend
-npm run lint
-npm run build
+bun run lint
+bun run build
 ```
 
 ## Documentation

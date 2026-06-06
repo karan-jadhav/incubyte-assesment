@@ -8,23 +8,34 @@ file-based routing, TanStack Query for API state, and Tailwind CSS for styling.
 Install dependencies:
 
 ```bash
-npm install
+bun install
 ```
 
 Start the Vite dev server:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 The dev server runs on port `3000` by default.
+
+## Docker
+
+Build the production image from the repository root:
+
+```bash
+docker build -f frontend/Dockerfile -t incubyte-frontend .
+```
+
+The image builds with `VITE_API_BASE_URL=/api` by default and serves static
+assets with Bun on port `3000`.
 
 ## Backend URL
 
 API requests use `VITE_API_BASE_URL`.
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8000 npm run dev
+VITE_API_BASE_URL=http://localhost:8000 bun run dev
 ```
 
 If `VITE_API_BASE_URL` is not set, the frontend uses `/api`.
@@ -32,12 +43,12 @@ If `VITE_API_BASE_URL` is not set, the frontend uses `/api`.
 ## Scripts
 
 ```bash
-npm run dev
-npm run build
-npm run lint
-npm run check
-npm run format
-npm run generate-routes
+bun run dev
+bun run build
+bun run lint
+bun run check
+bun run format
+bun run generate-routes
 ```
 
 ## App Structure

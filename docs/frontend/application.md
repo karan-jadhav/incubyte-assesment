@@ -6,6 +6,7 @@ The frontend React app lives in `frontend`.
 
 - Vite
 - React
+- Bun
 - TanStack Router
 - TanStack Query
 - TanStack Query Devtools
@@ -21,7 +22,7 @@ If the variable is not set, the frontend uses `/api`.
 Example local API configuration:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8000 npm run dev
+VITE_API_BASE_URL=http://localhost:8000 bun run dev
 ```
 
 ## Run
@@ -30,26 +31,48 @@ Install dependencies:
 
 ```bash
 cd frontend
-npm install
+bun install
 ```
 
 Start the local frontend:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 The dev server uses port `3000`.
+
+## Docker
+
+The frontend production image is defined in `frontend/Dockerfile`.
+
+The Docker image builds static assets with:
+
+```text
+VITE_API_BASE_URL=/api
+```
+
+and serves them through a Bun static server on port `3000`. The static server
+rejects path traversal attempts and falls back to `index.html` for client-side
+routes.
+
+In Docker Compose, Traefik routes:
+
+```text
+https://incubyte-assesment.jadhav.dev
+```
+
+to the frontend service.
 
 ## Validate
 
 ```bash
 cd frontend
-npm run lint
-npm run build
+bun run lint
+bun run build
 ```
 
-Use `npm run check` to run Prettier in check mode.
+Use `bun run check` to run Prettier in check mode.
 
 ## Structure
 

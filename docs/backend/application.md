@@ -9,6 +9,10 @@ By default, settings are loaded from `backend/.env`.
 
 Tracked example values are available in `backend/.env.example`.
 
+Docker Compose loads backend container settings from `backend/.env.docker`.
+That file uses the Compose database service name, `postgres`, instead of
+`localhost`.
+
 Database access uses SQLAlchemy's async engine and sessions. The local database URL uses the `postgresql+psycopg` driver.
 
 ## Run
@@ -24,6 +28,22 @@ Health check:
 ```text
 GET /health
 ```
+
+## Docker
+
+The backend production image is defined in `backend/Dockerfile`.
+
+It runs Uvicorn on port `8000` and expects `DATABASE_URL` to point at the
+PostgreSQL database. In Docker Compose, the backend service reads this value
+from `backend/.env.docker`.
+
+In Docker Compose, Traefik routes:
+
+```text
+https://incubyte-assesment.jadhav.dev/api
+```
+
+to the backend service and strips `/api` before forwarding the request.
 
 ## Employee API
 
