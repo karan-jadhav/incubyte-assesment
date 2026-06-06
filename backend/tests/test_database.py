@@ -5,7 +5,6 @@ from backend.config import Settings
 from backend.database import (
     create_engine,
     create_session_maker,
-    get_session,
     normalize_database_url,
 )
 
@@ -47,7 +46,7 @@ def test_create_engine_returns_async_engine():
         engine.sync_engine.dispose()
 
 
-async def test_get_session_yields_async_session():
+async def test_create_session_maker_returns_async_sessions():
     settings = Settings(
         DATABASE_URL="postgresql://user:password@localhost:5432/app",
     )
@@ -55,10 +54,7 @@ async def test_get_session_yields_async_session():
     session_maker = create_session_maker(engine)
 
     try:
-        session_generator = get_session(session_maker)
-        session = await anext(session_generator)
-
-        assert isinstance(session, AsyncSession)
+        async with session_maker() as session:
+            assert isinstance(session, AsyncSession)
     finally:
-        await session.aclose()
         await engine.dispose()

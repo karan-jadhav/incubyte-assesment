@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 
 from backend.config import Settings, get_settings
+from backend.routes.employees import router as employees_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(title=settings.app_name, debug=settings.debug)
+    app.include_router(employees_router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

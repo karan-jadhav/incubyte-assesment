@@ -24,3 +24,17 @@ Health check:
 ```text
 GET /health
 ```
+
+## Employee API
+
+Employee CRUD endpoints:
+
+```text
+POST /employees
+GET /employees
+GET /employees/{employee_id}
+PATCH /employees/{employee_id}
+DELETE /employees/{employee_id}
+```
+
+The list endpoint supports `page`, `page_size`, `search`, `country`, and `job_title` query parameters.
